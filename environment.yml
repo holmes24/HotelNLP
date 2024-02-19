@@ -1,0 +1,18 @@
+name: hotelnlp-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - pickle
+  - re
+  - streamlit
+  - nltk
+  - scikit-learn
+  - stopwords
+  - wordnet
+  - pillow
+  # Add any other dependencies you use in your code
+
