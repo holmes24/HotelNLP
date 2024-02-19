@@ -88,4 +88,9 @@ def main():
 
             # Display result
             st.write("Sentiment Score:", sentiment_score)
-            st.markdown(f'<div style="background-color: {"green" if polarity == 1 else "red"}; color:white; padding: 10px">The Review is {"Positive" if
+            st.markdown("""
+<div style="background-color: {"green" if polarity == 1 else "red"}; color:white; padding: 10px">
+The Review is {"Positive" if polarity == 1 else "Negative"} 
+</div>
+""", unsafe_allow_html=True)
+
