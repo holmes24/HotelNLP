@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 try:
   import nltk
 except ImportError:
-  !pip install nltk
+  pip install nltk
 
 
 # Download NLTK resources
