@@ -1,22 +1,22 @@
-import streamlit as st
+# Imports
 import numpy as np
 import pandas as pd
 import pickle
-import nltk
 import re
-from nltk.stem import WordNetLemmatizer
+import streamlit as st
+import nltk
 from nltk.corpus import stopwords
 from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.stem import WordNetLemmatizer
+from PIL import Image
 from sklearn.feature_extraction.text import TfidfVectorizer
-import eli5
+
+# Download NLTK resources
 nltk.download('stopwords')
+nltk.download('vader_lexicon')
 nltk.download('wordnet')
 
-from PIL import Image
-
-logo=Image.open('/content/reviews_icon.png')
-st.set_page_config(page_title="Hotel Review Analysis App",page_icon=logo)
-
+# Function to set background image
 def set_bg_hack_url(image_url, width=None, height=None):
     st.markdown(
          f"""
@@ -32,95 +32,84 @@ def set_bg_hack_url(image_url, width=None, height=None):
          unsafe_allow_html=True
      )
 
-# Example usage
-set_bg_hack_url("https://cdn.pixabay.com/photo/2017/03/09/06/30/pool-2128578_1280.jpg", width="100%", height="100%")
-
-# Load pre-trained SVM model
-with open('/content/sv_d.pkl', 'rb') as file:
-    loaded_model = pickle.load(file)
-
-html_temp = """
-<div style ="background-color:yellow;padding:10px">
-<h1 style ="color:black;text-align:center;font-family: 'Bell MT', serif;">Sentiment Review Analysis</h1>
-</div>
-<br>
-"""
-st.markdown(html_temp, unsafe_allow_html=True)
-
-# Developing custom stopwords involves modifying existing stop words by altering a few words
-default_stopwords = set(stopwords.words('english'))
-custom_stopwords = default_stopwords.union({'n'}) - {'not'}
-
-# Initialize WordNetLemmatizer
-le = WordNetLemmatizer()
-
-# Preprocess input text
-def preprocess_text(text):
-    r = re.sub('[^a-zA-Z1-9]', " ", str(text))
-    r = r.lower()
-    r = r.split()
-    r = [le.lemmatize(word) for word in r if word not in custom_stopwords]
-    text = " ".join(r)
-    return text
-
-# Load TF-IDF Vectorizer vocabulary
-with open("tfidf_vocab.pkl", "rb") as vocab_file:
-    tfidf_vocab = pickle.load(vocab_file)
+# Function to preprocess text
+def preprocess_text(text, le, custom_stopwords):
+    r = re.sub('[^a-zA-Z1-9]', " ", str(text).lower())
+    r = ' '.join([le.lemmatize(word) for word in r.split() if word not in custom_stopwords])
+    return r
 
 # Function to perform TF-IDF vectorization
-def tfidf_vectorize(text):
-    # Load TF-IDF Vectorizer
+def tfidf_vectorize(text, tfidf_vocab):
     tfidf_vectorizer = TfidfVectorizer(vocabulary=tfidf_vocab)
-    # Transform the input text
     text_tfidf = tfidf_vectorizer.fit_transform([text])
     return text_tfidf
 
-# User input
-review = st.text_input("Text for Prediction:", placeholder="Enter the Text")
+# Main function
+def main():
+    # Set background image
+    set_bg_hack_url("https://cdn.pixabay.com/photo/2017/03/09/06/30/pool-2128578_1280.jpg", width="100%", height="100%")
 
-data= st.file_uploader(
-    "Upload  a CSV (or) Excel file for the prediction - Upload the file and click on Predict",
-    type=["csv","xlsx"]
-)
-if st.button("Predict"):
-    if review:  # Check if review text is provided
-        # Preprocess input text
-        processed_text = preprocess_text(review)
+    # Load pre-trained SVM model
+    with open('sv_d.pkl', 'rb') as file:
+        loaded_model = pickle.load(file)
 
-        # Sentiment Analysis
-        nltk.download('vader_lexicon')
-        sia = SentimentIntensityAnalyzer()
-        sentiment_score = sia.polarity_scores(processed_text)['compound']
+    # Load TF-IDF Vectorizer vocabulary
+    with open("tfidf_vocab.pkl", "rb") as vocab_file:
+        tfidf_vocab = pickle.load(vocab_file)
 
-        # Perform TF-IDF vectorization
-        text_tfidf = tfidf_vectorize(processed_text)
+    # Initialize WordNetLemmatizer and stopwords
+    le = WordNetLemmatizer()
+    default_stopwords = set(stopwords.words('english'))
+    custom_stopwords = default_stopwords.union({'n'}) - {'not'}
 
-        # Predict polarity using the pre-trained SVM model
-        polarity = loaded_model.predict(text_tfidf)[0]
+    # UI
+    st.title("Hotel Review Analysis App")
+    st.markdown("""
+    <div style ="background-color:yellow;padding:10px">
+    <h1 style ="color:black;text-align:center;font-family: 'Bell MT', serif;">Sentiment Review Analysis</h1>
+    </div>
+    <br>
+    """, unsafe_allow_html=True)
 
-        # Display the result
-        st.write("Sentiment Score:", sentiment_score)
-        if polarity == 1:
-            st.markdown('<div style="background-color:  #333333; color:green ;padding: 10px">The Review is Positive 😃</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div style="background-color:  #333333; color:red; padding: 10px">The Review is Negative 😞</div>', unsafe_allow_html=True)
-    else:
-        if data is not None:
-            if data.name.split('.')[-1] == 'csv':
-                data = pd.read_csv(data)
-            elif data.name.split('.')[-1] == 'xlsx':
-                data = pd.read_excel(data)
+    # User input
+    review = st.text_input("Text for Prediction:", placeholder="Enter the Text")
 
-            # Preprocess text in the 'Review' column
-            data["preprocessed_text"] = data['Review'].apply(preprocess_text)
+    data = st.file_uploader("Upload a CSV (or) Excel file for bulk sentiment analysis", type=["csv", "xlsx"])
+
+    if st.button("Predict"):
+        if review:
+            # Preprocess input text
+            processed_text = preprocess_text(review, le, custom_stopwords)
 
             # Sentiment Analysis
-            nltk.download('vader_lexicon')
             sia = SentimentIntensityAnalyzer()
-            data['sentiment_score'] = data['preprocessed_text'].apply(lambda x: sia.polarity_scores(x)['compound'])
-            data["polarity"] = np.where(data["sentiment_score"] > 0, "positive", "negative")
+            sentiment_score = sia.polarity_scores(processed_text)['compound']
+
+            # Perform TF-IDF vectorization
+            text_tfidf = tfidf_vectorize(processed_text, tfidf_vocab)
+
+            # Predict polarity using the pre-trained SVM model
+            polarity = loaded_model.predict(text_tfidf)[0]
+
+            # Display result
+            st.write("Sentiment Score:", sentiment_score)
+            st.markdown(f'<div style="background-color: {"green" if polarity == 1 else "red"}; color:white; padding: 10px">The Review is {"Positive" if polarity == 1 else "Negative"} 😃</div>', unsafe_allow_html=True)
+        elif data:
+            # Process uploaded file
+            df = pd.read_csv(data) if data.name.split('.')[-1] == 'csv' else pd.read_excel(data)
+
+            # Preprocess text in the 'Review' column
+            df["preprocessed_text"] = df['Review'].apply(lambda x: preprocess_text(x, le, custom_stopwords))
+
+            # Sentiment Analysis
+            sia = SentimentIntensityAnalyzer()
+            df['sentiment_score'] = df['preprocessed_text'].apply(lambda x: sia.polarity_scores(x)['compound'])
+            df["polarity"] = np.where(df["sentiment_score"] > 0, "positive", "negative")
+
             # Display the preprocessed data
-            data1=data.drop(["Review","Rating"],axis=1)
-            st.write(data1)
+            st.write(df.drop(["Review", "Rating"], axis=1))
         else:
             st.write("Please upload a file to perform prediction.")
+
+if __name__ == "__main__":
+    main()
