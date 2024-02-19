@@ -10,26 +10,22 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.stem import WordNetLemmatizer
 from PIL import Image
 from sklearn.feature_extraction.text import TfidfVectorizer
-# Download NLTK resources
-nltk.download('stopwords')
-nltk.download('vader_lexicon')
-nltk.download('wordnet')
 
 # Function to set background image
 def set_bg_hack_url(image_url, width=None, height=None):
     st.markdown(
-         f"""
-         <style>
-         .stApp {{
-             background: url("{image_url}");
-             background-size: cover;
-             {'width: ' + width + ';' if width else ''}
-             {'height: ' + height + ';' if height else ''}
-         }}
-         </style>
-         """,
-         unsafe_allow_html=True
-     )
+        f"""
+        <style>
+        .stApp {{
+            background: url("{image_url}");
+            background-size: cover;
+            {'width: ' + width + ';' if width else ''}
+            {'height: ' + height + ';' if height else ''}
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Function to preprocess text
 def preprocess_text(text, le, custom_stopwords):
@@ -92,23 +88,4 @@ def main():
 
             # Display result
             st.write("Sentiment Score:", sentiment_score)
-            st.markdown(f'<div style="background-color: {"green" if polarity == 1 else "red"}; color:white; padding: 10px">The Review is {"Positive" if polarity == 1 else "Negative"} 😃</div>', unsafe_allow_html=True)
-        elif data:
-            # Process uploaded file
-            df = pd.read_csv(data) if data.name.split('.')[-1] == 'csv' else pd.read_excel(data)
-
-            # Preprocess text in the 'Review' column
-            df["preprocessed_text"] = df['Review'].apply(lambda x: preprocess_text(x, le, custom_stopwords))
-
-            # Sentiment Analysis
-            sia = SentimentIntensityAnalyzer()
-            df['sentiment_score'] = df['preprocessed_text'].apply(lambda x: sia.polarity_scores(x)['compound'])
-            df["polarity"] = np.where(df["sentiment_score"] > 0, "positive", "negative")
-
-            # Display the preprocessed data
-            st.write(df.drop(["Review", "Rating"], axis=1))
-        else:
-            st.write("Please upload a file to perform prediction.")
-
-if __name__ == "__main__":
-    main()
+            st.markdown(f'<div style="background-color: {"green" if polarity == 1 else "red"}; color:white; padding: 10px">The Review is {"Positive" if
