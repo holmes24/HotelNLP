@@ -10,12 +10,6 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.stem import WordNetLemmatizer
 from PIL import Image
 from sklearn.feature_extraction.text import TfidfVectorizer
-try:
-  import nltk
-except ImportError:
-  pip install nltk
-
-
 # Download NLTK resources
 nltk.download('stopwords')
 nltk.download('vader_lexicon')
